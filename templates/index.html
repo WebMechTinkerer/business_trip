@@ -1,0 +1,159 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reisekostenabrechnung</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 600px;
+            margin: auto;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        select, input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        .expenses, .meals {
+            margin-bottom: 20px;
+        }
+        .meal-options {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Reisekostenabrechnung Rechner</h1>
+    <form method="POST" id="tripForm">
+        <div class="form-group">
+            <label for="country">Land der Dienstreise:</label>
+            <select id="country" name="country">
+                {% for country in countries %}
+                <option value="{{ country }}">{{ country }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="departure">Abreisedatum und -uhrzeit:</label>
+            <input type="datetime-local" id="departure" name="departure" required>
+        </div>
+        <div class="form-group">
+            <label for="return">Rückkehrdatum und -uhrzeit:</label>
+            <input type="datetime-local" id="return" name="return" required>
+        </div>
+        <div class="meals">
+            <h3>Unentgeltliche Verpflegung</h3>
+            <div id="mealSelection"></div>
+        </div>
+        <div class="expenses">
+            <h3>Ausgaben</h3>
+            <div class="form-group">
+                <label for="expense">Beschreibung:</label>
+                <input type="text" id="expense" name="expense_description">
+            </div>
+            <div class="form-group">
+                <label for="cost">Kosten [€]:</label>
+                <input type="number" step="0.01" id="cost" name="expense_cost">
+            </div>
+            <button type="button" onclick="addExpense()">Ausgabe hinzufügen</button>
+        </div>
+        <div id="expenseList"></div>
+        <button type="submit">Erstattung berechnen</button>
+    </form>
+
+    <!-- Display the calculated reimbursement here -->
+    {% if reimbursement %}
+    <div class="result">
+        Total Reimbursement: {{ reimbursement }} €
+    </div>
+    {% endif %}
+
+    <script>
+        let expenses = [];
+
+        function addExpense() {
+            let expenseDesc = document.getElementById('expense').value;
+            let expenseCost = parseFloat(document.getElementById('cost').value);
+            if (expenseDesc && !isNaN(expenseCost)) {
+                expenses.push({description: expenseDesc, cost: expenseCost});
+                updateExpenseList();
+                // Clear input fields
+                document.getElementById('expense').value = '';
+                document.getElementById('cost').value = '';
+            }
+        }
+
+        function updateExpenseList() {
+            let expenseList = document.getElementById('expenseList');
+            expenseList.innerHTML = '';
+            expenses.forEach((expense, index) => {
+                expenseList.innerHTML += `<p>${expense.description}: €${expense.cost.toFixed(2)}</p>`;
+            });
+            // Store the expenses array as a JSON string in a hidden input field
+            let expensesInput = document.createElement('input');
+            expensesInput.type = 'hidden';
+            expensesInput.name = 'expenses';
+            expensesInput.value = JSON.stringify(expenses);
+            expenseList.appendChild(expensesInput);
+        }
+
+        document.getElementById('departure').addEventListener('change', generateMealCheckboxes);
+        document.getElementById('return').addEventListener('change', generateMealCheckboxes);
+
+        function generateMealCheckboxes() {
+            let departureDate = document.getElementById('departure').value;
+            let returnDate = document.getElementById('return').value;
+            let mealSelection = document.getElementById('mealSelection');
+            mealSelection.innerHTML = '';
+
+            if (departureDate && returnDate) {
+                let departure = new Date(departureDate);
+                let returnDt = new Date(returnDate);
+
+                if (returnDt >= departure) {
+                    // Iterate from departure date to return date
+                    let currentDate = new Date(departure);
+
+                    while (currentDate <= returnDt) {
+                        // Format the date as dd/mm/yyyy
+                        let formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}/${currentDate.getFullYear()}`;
+
+                        mealSelection.innerHTML += `
+                            <div class="meal-options">
+                                <span>${formattedDate}</span>
+                                <label><input type="checkbox" name="meal_${formattedDate}_breakfast"> Breakfast</label>
+                                <label><input type="checkbox" name="meal_${formattedDate}_lunch"> Lunch</label>
+                                <label><input type="checkbox" name="meal_${formattedDate}_dinner"> Dinner</label>
+                            </div>
+                        `;
+
+                        // Move to the next day
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
