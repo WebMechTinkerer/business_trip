@@ -28,9 +28,11 @@ def calculate_reimbursement(country_data, departure, return_date, meal_data, exp
         return ans
 
 
-    def reduction_allowance(date):
-        """Calculates the reduction of allowance in % due to
-        breakfast, lunch or dinner being provided for free."""
+    def calculate_allowance(allowance, max_allowance, date):
+        """Calculate the of allowance."""
+
+        ### Calculate the reduction of allowance due to
+        ### having breakfast, lunch or dinner provided for free.
         reduction = 0
 
         if meal_data[date]['breakfast']:
@@ -40,7 +42,7 @@ def calculate_reimbursement(country_data, departure, return_date, meal_data, exp
         if meal_data[date]['dinner']:
             reduction += 40
 
-        return reduction
+        return allowance - max_allowance * reduction / 100
 
 
     reimbursement = 0
@@ -63,17 +65,13 @@ def calculate_reimbursement(country_data, departure, return_date, meal_data, exp
         else:
             val['duration'] = 24
 
-        ### Calculate the reduction of allowance due to
-        ### having breakfast, lunch or dinner provided for free.
-        reduction = reduction_allowance(date)
-
         ### Enter the daily allowance for each day in the dict.
         if val['duration'] == 24:
-            val['euros'] = country_data[1] * (1 - reduction / 100)
+            val['euros'] = max(0, calculate_allowance(country_data[1], country_data[1], date))
         if 11 < val['duration'] < 24:
-            val['euros'] = country_data[2] * (1 - reduction / 100)
+            val['euros'] = max(0, calculate_allowance(country_data[2], country_data[1], date))
         if 8 < val['duration'] <= 11:
-            val['euros'] = country_data[3] * (1 - reduction / 100)
+            val['euros'] = max(0, calculate_allowance(country_data[3], country_data[1], date))
         if val['duration'] <= 8:
             val['euros'] = 0
 
