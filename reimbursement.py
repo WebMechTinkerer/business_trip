@@ -47,6 +47,8 @@ def calculate_reimbursement(country_data, departure, return_date, meal_data, exp
 
     reimbursement = 0
 
+    dates = [key for key, value in meal_data.items()]
+
     ### Create a dictionary for every day with duration and money to be filled.
     allowance = {}
     for date in meal_data:
@@ -66,17 +68,22 @@ def calculate_reimbursement(country_data, departure, return_date, meal_data, exp
             val['duration'] = 24
 
         ### Enter the daily allowance for each day in the dict.
-        if val['duration'] == 24:
-            val['euros'] = max(0, calculate_allowance(country_data[1], country_data[1], date))
-        if 11 < val['duration'] < 24:
+        if len(allowance) > 1 and date in (dates[0], dates[-1]):
             val['euros'] = max(0, calculate_allowance(country_data[2], country_data[1], date))
-        if 8 < val['duration'] <= 11:
-            val['euros'] = max(0, calculate_allowance(country_data[3], country_data[1], date))
-        if val['duration'] <= 8:
-            val['euros'] = 0
+        else:
+            if val['duration'] == 24:
+                val['euros'] = max(0, calculate_allowance(country_data[1], country_data[1], date))
+            if 11 < val['duration'] < 24:
+                val['euros'] = max(0, calculate_allowance(country_data[2], country_data[1], date))
+            if 8 < val['duration'] <= 11:
+                val['euros'] = max(0, calculate_allowance(country_data[3], country_data[1], date))
+            if val['duration'] <= 8:
+                val['euros'] = 0
 
     ### Calculate total reimbursement.
     reimbursement += sum_expenses(expenses)
     reimbursement += sum_allowance(allowance)
-    
+
+    print(f"{allowance=}")
+
     return reimbursement
