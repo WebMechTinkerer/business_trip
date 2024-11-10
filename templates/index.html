@@ -4,103 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reisekostenabrechnung</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 20px;
-            max-width: 700px;
-            margin: auto;
-            background-color: #f9f9f9;
-            color: #333;
-            line-height: 1.6;
-        }
-        h1 {
-            text-align: center;
-            color: #4CAF50;
-        }
-        form {
-            background: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        select, input, button {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 1rem;
-            box-sizing: border-box; /* Ensures consistent sizing */
-        }
-        select:focus, input:focus, button:focus {
-            outline: none;
-            border-color: #4CAF50;
-            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
-        }
-        button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        button:hover {
-            background: #45a049;
-        }
-        .expenses, .meals {
-            margin-bottom: 20px;
-        }
-        .meal-options {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-        }
-        .meal-options:last-child {
-            border-bottom: none;
-        }
-        .result {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #e8f5e9;
-            border-radius: 5px;
-            font-size: 18px;
-            font-weight: bold;
-            color: #2e7d32;
-            text-align: center;
-        }
-        #expenseList p {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px solid #eee;
-        }
-        #expenseList p:last-child {
-            border-bottom: none;
-        }
-        #expenseList p span {
-            font-weight: bold;
-        }
-        @media (max-width: 600px) {
-            .meal-options {
-                flex-wrap: wrap;
-                justify-content: flex-start;
-            }
-            .meal-options span {
-                flex: 1 100%;
-                margin-bottom: 5px;
-            }
-        }    
-    </style>
+    <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
     <h1>Reisekostenabrechnung Rechner</h1>
@@ -148,7 +52,64 @@
     {% endif %}
 
     <script>
-        // JavaScript logic remains unchanged
+        let expenses = [];
+
+        function addExpense() {
+            let expenseDesc = document.getElementById('expense').value;
+            let expenseCost = parseFloat(document.getElementById('cost').value);
+            if (expenseDesc && !isNaN(expenseCost)) {
+                expenses.push({description: expenseDesc, cost: expenseCost});
+                updateExpenseList();
+                document.getElementById('expense').value = '';
+                document.getElementById('cost').value = '';
+            }
+        }
+
+        function updateExpenseList() {
+            let expenseList = document.getElementById('expenseList');
+            expenseList.innerHTML = '';
+            expenses.forEach((expense, index) => {
+                expenseList.innerHTML += `<p><span>${expense.description}</span> €${expense.cost.toFixed(2)}</p>`;
+            });
+            let expensesInput = document.createElement('input');
+            expensesInput.type = 'hidden';
+            expensesInput.name = 'expenses';
+            expensesInput.value = JSON.stringify(expenses);
+            expenseList.appendChild(expensesInput);
+        }
+
+        document.getElementById('departure').addEventListener('change', generateMealCheckboxes);
+        document.getElementById('return').addEventListener('change', generateMealCheckboxes);
+
+        function generateMealCheckboxes() {
+            let departureDate = document.getElementById('departure').value;
+            let returnDate = document.getElementById('return').value;
+            let mealSelection = document.getElementById('mealSelection');
+            mealSelection.innerHTML = '';
+
+            if (departureDate && returnDate) {
+                let departure = new Date(departureDate);
+                let returnDt = new Date(returnDate);
+
+                if (returnDt >= departure) {
+                    let currentDate = new Date(departure);
+
+                    while (currentDate <= returnDt) {
+                        let formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}/${currentDate.getFullYear()}`;
+
+                        mealSelection.innerHTML += `
+                            <div class="meal-options">
+                                <span>${formattedDate}</span>
+                                <label><input type="checkbox" name="meal_${formattedDate}_breakfast">Frühstück</label>
+                                <label><input type="checkbox" name="meal_${formattedDate}_lunch">Mittagessen</label>
+                                <label><input type="checkbox" name="meal_${formattedDate}_dinner">Abendessen</label>
+                            </div>
+                        `;
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
+                }
+            }
+        }
     </script>
 </body>
 </html>
